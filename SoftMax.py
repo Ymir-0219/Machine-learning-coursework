@@ -4,7 +4,6 @@ Created on Sun Dec 19 09:42:26 2021
 
 @author: syr11
 """
-
 import pandas as pd  
 import numpy as np
 import matplotlib as mpl
@@ -14,7 +13,7 @@ from sklearn.model_selection import KFold
 plt.rcParams['font.sans-serif']=['SimHei']
 plt.rcParams['axes.unicode_minus']=False
 
-times=100
+times=150
 kf=KFold(n_splits=5)
 K=4#改数字
 
@@ -53,7 +52,7 @@ def get_gradient(is_index,theta,X):
         error=is_index[i]-softmax(np.dot(theta,X[i]))
         error=np.array(error) 
 #改位置
-#        mid_gradient=np.array([error[0]*X[i],error[1]*X[i],error[2]*X[i]])
+ #       mid_gradient=np.array([error[0]*X[i],error[1]*X[i],error[2]*X[i]])
         mid_gradient=np.array([error[0]*X[i],error[1]*X[i],error[2]*X[i],error[3]*X[i]])
 #        mid_gradient=np.array([error[0]*X[i],error[1]*X[i],error[2]*X[i],error[3]*X[i],error[4]*X[i],error[5]*X[i]])
 #        mid_gradient=np.array([error[0]*X[i],error[1]*X[i],error[2]*X[i],error[3]*X[i],error[4]*X[i],error[5]*X[i],error[6]*X[i],error[7]*X[i]])
@@ -89,6 +88,7 @@ if __name__ == '__main__':
     
     alpha=0.1
     #alpha=2.656139888758755e-06#100次以后的alpha
+    #alpha=1.368914790585889e-06#150次
     x_show = np.stack((data_x1_train.flat, data_x2_train.flat), axis=1)
     one=np.ones((len(x_show),1))
     X=np.c_[x_show,one]
@@ -97,7 +97,11 @@ if __name__ == '__main__':
     X_test=np.c_[x_show,one]
     errorList=[]
     AccuracyList=[]
-    theta=np.ones((K,3))
+    
+    #theta=np.ones((K,3))
+    rd = np.random.RandomState(888) 
+    theta=rd.normal(0,50,(K,3))
+    
     #theta=[[  84.89168355,-82.26291255,-182.69542426],
     #       [ 100.55770689,-9.52063141,127.50936489],
      #      [  11.61629696 , -9.56058015, 147.88865575],
@@ -110,26 +114,38 @@ if __name__ == '__main__':
     #         [-101.0042127   ,87.22171248   ,7.9534656 ],
     #         [ -61.25858    , -4.56934666 ,-19.34067575],
     #         [  78.84071855  ,32.42819209  ,10.74578523]]
+    
+    #theta=[[-16918.83610406,55798.0054879  ,12707.7013018 ],
+    #       [-29540.92658202 ,24553.78086804,-51473.21737898],
+     #      [ 54290.92902738,-81451.78592233,-14382.9002278 ],
+    #       [ -4771.51442764  ,4207.61007027, 56323.95665962]]
     is_index_train=get_OneHot(data_index_train)
     plt.ion()
     fig = plt.figure(figsize=(17, 6))
     for i in range(times):
         theta,mid_error=upload_theta(theta, X, is_index_train,alpha) 
-        #alpha*=0.99
+        alpha*=0.9
         errorList.append(mid_error)
         Accuracy,index_Acc=upload_Accuracy(theta,X_test,data_index_test)
         AccuracyList.append(Accuracy)
         ax1 = fig.add_subplot(131)
-        plt.sca(ax1)
-        plt.plot([x for x in range(len(errorList))], errorList, c='blue', label='误差迭代曲线')
         
+        plt.sca(ax1)
+        plt.title("误差迭代曲线")
+        plt.plot([x for x in range(len(errorList))], errorList, c='blue', label='误差迭代曲线')
+        plt.legend()
+              
         ax2 = fig.add_subplot(132)
-        plt.sca(ax2)       
+        plt.sca(ax2)    
+        plt.title("测试集正确率曲线")
         plt.plot([x for x in range(len(AccuracyList))], AccuracyList, c='red', label='预测正确率')
+        
+        plt.legend()
         
         ax3 = fig.add_subplot(133)
         plt.sca(ax3)
-        N, M = 300,300 
+        plt.title("分类结果")
+        N, M = 400,400 
         x1_min, x2_min = min(data_x1_train),min(data_x2_train)
         x1_max, x2_max =max(data_x1_train),max(data_x2_train)
         t1 = np.linspace(x1_min, x1_max, N)
@@ -150,7 +166,9 @@ if __name__ == '__main__':
         plt.ylim(x2_min, x2_max)
         plt.pcolormesh(x1, x2, y_predict.reshape(x1.shape), cmap=cm_light)
         plt.scatter(data_x1_train,data_x2_train,s=2,c=data_index_train,cmap=cm_dark)
+        
         plt.pause(0.1)
+        plt.clf()
     print(theta)
     plt.ioff()
     plt.show()

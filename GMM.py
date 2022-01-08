@@ -4,7 +4,6 @@ Created on Thu Dec 23 11:06:45 2021
 
 @author: syr11
 """
-import random
 import pandas as pd  
 import numpy as np
 import matplotlib as mpl
