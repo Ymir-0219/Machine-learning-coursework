@@ -1,6 +1,66 @@
 ## 修改日志
 
+### 2022/1/12
+
+完成了学习率的自适应，采用的是 AdaGrad 方法，在一定条件下，可以不提供初始学习率，不断学习得到学习率。仍然存在的问题有，全局学习率的设置，以及衰减速率的设置，这些都导致了学习率并不容易自己进行调节。但是在调节过程中通过分析学习率的变化大概知道学习率的范围，也有利于我们去设置学习率。也有可能是我的学习率自适应算法编写存在问题，导致效果并没有达到预期。
+
+同时今天在训练过程中发现了，当我在某种神经网络结构下训练不出模型时，扩大模型输出层的数量，反而使模型得到了成功的训练，但是无法理解这个现象。
+
+![image-20220112103224310](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112103224310.png)
+
+神经网络作为非线性模型依然没有很好的区分开分类集 GMM8 的上难以区分的两类。
+
+![image-20220112134209204](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112134209204.png)
+
+alpha=[0.01,0.001,0.01,0.01] 6-8-4
+
+![image-20220112134544833](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112134544833.png)
+
+alpha=[0.001,0.0015,0.01,0.01] 6-8
+
+一个很有趣的错误：如果对于 GMM4 样本集采用结构为 6-16-4 的神经网络，训练失败，但若将网络改为 6-16-5，就可以训练得到非常棒的结果，原因未知。
+
+学习率自适应设计失败，接下来将尝试在训练过程中进行进行自适应。
+
+给定初始学习率，后进行学习率自适应反而加剧了震荡，没有达到理想的结果，而且与全局学习率存在很大的关系。
+
+![image-20220112152259748](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112152259748.png)
+
+学习率自适应：
+
+e=1e-6
+
+![image-20220112160855226](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112160855226.png)
+
+![image-20220112182003970](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112182003970.png)
+
+![image-20220112182023091](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112182023091.png)
+
+![image-20220112182039968](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112182039968.png)
+
+![image-20220112195501941](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112195501941.png)
+
+没有采用自适应学习率统一设置
+
+![image-20220112195819865](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112195819865.png)
+
+采用自适应
+
+![image-20220112195855638](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112195855638.png)
+
+分别设置
+
+![image-20220112200647969](C:\Users\syr11\AppData\Roaming\Typora\typora-user-images\image-20220112200647969.png)
+
+将错误的学习率纠正
+
+错误学习率纠正：e =1e-5,rou = 0.1
+
+
+
 ### 2022/1/8
+
+
 
 开始编译前向神经网络。一开始尝试将常数值写进神经元，即给神经元加入恒为1的常量，但是在进行权重更新时，十分不便，遂放弃，更改为在激活函数中加入常数值，目前还未完成。
 

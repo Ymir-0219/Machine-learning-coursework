@@ -22,15 +22,15 @@ from sklearn.model_selection import KFold
 plt.rcParams['font.sans-serif']=['SimHei']
 plt.rcParams['axes.unicode_minus']=False
 
-times=3000
+times=500
 kf=KFold(n_splits=5)
-Output_Layer_num=6#输出层的神经元数量即类别数
-Hidden_Layer_num=128#隐藏层的神经元数量
+Output_Layer_num=4#输出层的神经元数量即类别数
+Hidden_Layer_num=16#隐藏层的神经元数量
 Input_layer_num=6#输入层的神经元数量即输入的特征量
 Input_dimension=6#维度扩充的数量
-
+rou=0.9
 def readData():
-    data=pd.read_csv("GMM6.csv")#该文件夹名字
+    data=pd.read_csv("GMM4.csv")#该文件夹名字
     index=data.iloc[:,0]
     x1=data.iloc[:,1]
     x2=data.iloc[:,2]   
@@ -98,11 +98,12 @@ def get_error_OutputLayer(is_index_train,Output):
 def get_error_HiddenLayer(error_OutputLayer,W,Hidden_Layer):   
     return np.dot(error_OutputLayer,W.T)*Hidden_Layer*(1-Hidden_Layer)
 
-def upload(W,V,theta,gama,Output,is_index_train,Hidden_Layer,Input,error_OutputLayer,error_HiddenLayer,alpha):
+def upload(W,V,theta,gama,Output,is_index_train,Hidden_Layer,Input,error_OutputLayer,error_HiddenLayer):
+    
     W-=alpha*(np.dot(Hidden_Layer.T,error_OutputLayer))
     V-=alpha*(np.dot(Input.T,error_HiddenLayer))
-    gama-=alpha*np.sum(error_HiddenLayer,axis=0)/len(error_HiddenLayer)
-    theta-=alpha*np.sum(error_OutputLayer,axis=0)/len(error_OutputLayer)
+    gama-=alpha*np.sum(error_HiddenLayer,axis=0)
+    theta-=alpha*np.sum(error_OutputLayer,axis=0)
     return W,V,theta,gama
     
 def get_Acc(data_index_test,Input_test,W,V,gama,theta):
@@ -113,14 +114,17 @@ def get_Acc(data_index_test,Input_test,W,V,gama,theta):
     Accuracy=(np.sum(Test_predict==data_index_test))/len(Input_test)
     return Accuracy
 
+
+
 if __name__ == '__main__':
-    
-    
     Final_Acc=[]
     print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))
     #读取数据
     data_index,data_x1,data_x2=readData()
-    for train_index, test_index in kf.split(data_index): 
+    for train_index, test_index in kf.split(data_index):
+       
+        
+        
         data_index_train, data_index_test = data_index[train_index], data_index[test_index]
         data_x1_train, data_x1_test =data_x1[train_index], data_x1[test_index]
         data_x2_train,data_x2_test = data_x2[train_index], data_x2[test_index]
@@ -130,7 +134,7 @@ if __name__ == '__main__':
         data_x2_test=normalized(np.array(data_x2_test))
         data_index_train=np.array(data_index_train)
         data_index_test=np.array(data_index_test)
-        alpha=0.001    
+           
         #构造训练集的输入
         x_show = np.stack((data_x1_train.flat, data_x2_train.flat), axis=1)
         #Input_train=x_show
@@ -143,7 +147,9 @@ if __name__ == '__main__':
         errorList=[]
         #测试集的正确率
         AccuracyList=[]
-    
+        #学习率
+        alpha=0.001
+        #设置随机参数
         rd = np.random.RandomState(888) 
         #输入层权重
         #V=np.ones((Input_layer_num,Hidden_Layer_num-1))
@@ -173,7 +179,7 @@ if __name__ == '__main__':
             error=np.dot(error_OutputLayer,W.T)
             error_HiddenLayer=get_error_HiddenLayer(error_OutputLayer,W, Hidden_Layer)
             AccuracyList.append(get_Acc(data_index_test,Input_test,W,V,gama,theta))
-            W,V,theta,gama=upload(W, V, theta, gama, Output, is_index_train, Hidden_Layer, Input_train,error_OutputLayer,error_HiddenLayer,alpha)
+            W,V,theta,gama=upload(W, V, theta, gama, Output, is_index_train, Hidden_Layer, Input_train,error_OutputLayer,error_HiddenLayer)
             errorList.append(LMS(is_index_train, Output))
             if i%50==0:           
                 print(i)

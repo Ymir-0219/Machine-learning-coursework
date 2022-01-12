@@ -22,10 +22,13 @@ from sklearn.model_selection import KFold
 plt.rcParams['font.sans-serif']=['SimHei']
 plt.rcParams['axes.unicode_minus']=False
 
+e=1e-5
+mini_num=1e-7
+rou=0.79
 times=1000
 kf=KFold(n_splits=5)
 Output_Layer_num=6#输出层的神经元数量即类别数
-Hidden_Layer_num=8#隐藏层的神经元数量
+Hidden_Layer_num=24#隐藏层的神经元数量
 Input_layer_num=6#输入层的神经元数量即输入的特征量
 Input_dimension=6#维度扩充的数量
 
@@ -98,25 +101,20 @@ def get_error_OutputLayer(is_index_train,Output):
 def get_error_HiddenLayer(error_OutputLayer,W,Hidden_Layer):   
     return np.dot(error_OutputLayer,W.T)*Hidden_Layer*(1-Hidden_Layer)
 
-def upload(W,V,theta,gama,Output,is_index_train,Hidden_Layer,Input,error_OutputLayer,error_HiddenLayer,alpha):
+def upload(W,V,theta,gama,Output,is_index_train,Hidden_Layer,Input,error_OutputLayer,error_HiddenLayer,alpha,r):
     gra_W=np.dot(Hidden_Layer.T,error_OutputLayer)
     gra_V=np.dot(Input.T,error_HiddenLayer)
     gra_gama=np.sum(error_HiddenLayer,axis=0)/len(error_HiddenLayer)
     gra_theta=np.sum(error_OutputLayer,axis=0)/len(error_OutputLayer)
     #g=np.array([np.sum(gra_W)/len(Input),np.sum(gra_V)/len(Input),np.sum(gra_gama),np.sum(gra_theta)])
-    #r=rou*r+(1-rou)*g*g
-    #alpha+=e/np.sqrt(mini_num+r)*g
-    #print(alpha)
-    #W-=alpha*(gra_W)
-    #V-=alpha*(gra_V)
-    #gama-=alpha*gra_gama
-    #theta-=alpha*gra_theta
+    g=np.array([np.sum(gra_W),np.sum(gra_V),np.sum(gra_gama),np.sum(gra_theta)])
+    r=rou*r+(1-rou)*g*g
+    alpha+=e/np.sqrt(mini_num+r)*g
     W-=alpha[0]*(gra_W)
     V-=alpha[1]*(gra_V)
     gama-=alpha[2]*gra_gama
     theta-=alpha[3]*gra_theta
-    #return W,V,theta,gama,r,alpha
-    return W,V,theta,gama
+    return W,V,theta,gama,r,alpha
     
 def get_Acc(data_index_test,Input_test,W,V,gama,theta):
     Hidden_Layer=get_Hidden_Layer(get_Mid_input(V, Input_test),gama)
@@ -126,22 +124,29 @@ def get_Acc(data_index_test,Input_test,W,V,gama,theta):
     Accuracy=(np.sum(Test_predict==data_index_test))/len(Input_test)
     return Accuracy
 
+
+
 if __name__ == '__main__':
     
+
+    #Final_Acc=[]
     print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))
     #读取数据
     data_index,data_x1,data_x2=readData()
-    for train_index, test_index in kf.split(data_index): 
+    for train_index, test_index in kf.split(data_index):
+       
+        
+        
         data_index_train, data_index_test = data_index[train_index], data_index[test_index]
         data_x1_train, data_x1_test =data_x1[train_index], data_x1[test_index]
         data_x2_train,data_x2_test = data_x2[train_index], data_x2[test_index]
-    data_x1_train=normalized(np.array(data_x1_train))
-    data_x2_train=normalized(np.array(data_x2_train))
-    data_x1_test=normalized(np.array(data_x1_test))
-    data_x2_test=normalized(np.array(data_x2_test))
-    data_index_train=np.array(data_index_train)
-    data_index_test=np.array(data_index_test)
-        
+        data_x1_train=normalized(np.array(data_x1_train))
+        data_x2_train=normalized(np.array(data_x2_train))
+        data_x1_test=normalized(np.array(data_x1_test))
+        data_x2_test=normalized(np.array(data_x2_test))
+        data_index_train=np.array(data_index_train)
+        data_index_test=np.array(data_index_test)
+           
     #构造训练集的输入
     x_show = np.stack((data_x1_train.flat, data_x2_train.flat), axis=1)
     #Input_train=x_show
@@ -154,13 +159,15 @@ if __name__ == '__main__':
     errorList=[]
     #测试集的正确率
     AccuracyList=[]
-    #学习率的累计变量
-    #r=np.zeros(4)
+    #学习率的累计变量 
+    #r=np.array([1932.93,503.389,5.9481e-05,6.76972e-05])
+    r=np.zeros(4)
     #学习率
-    #alpha=np.zeros(4) 
-    alpha=np.array([0.05,0.01,0.001,0.001]) 
-    #alpha=0.01
-    rd = np.random.RandomState(12) 
+    #alpha=np.array([-6.26682e-05,0.00955386,-0.00610513,-0.00793964])
+    alpha=np.array([0.,0.,0.,0.])#错误的学习率
+    #alpha=np.array([0.01,0.001,0.001,0.001]) 
+    #设置随机参数
+    rd = np.random.RandomState(888) 
     #输入层权重
     #V=np.ones((Input_layer_num,Hidden_Layer_num-1))
     V=rd.normal(0,4,(Input_layer_num,Hidden_Layer_num))
@@ -176,8 +183,8 @@ if __name__ == '__main__':
     #得到训练集的独热码
     is_index_train=get_OneHot(data_index_train)
     
-    
-    #plt.ion()
+        
+        #plt.ion()
     
      
     for i in range(times):       
@@ -189,14 +196,16 @@ if __name__ == '__main__':
         error=np.dot(error_OutputLayer,W.T)
         error_HiddenLayer=get_error_HiddenLayer(error_OutputLayer,W, Hidden_Layer)
         AccuracyList.append(get_Acc(data_index_test,Input_test,W,V,gama,theta))
-        W,V,theta,gama=upload(W, V, theta, gama, Output, is_index_train, Hidden_Layer, Input_train,error_OutputLayer,error_HiddenLayer,alpha)
+        W,V,theta,gama,r,alpha=upload(W, V, theta, gama, Output, is_index_train, Hidden_Layer, Input_train,error_OutputLayer,error_HiddenLayer,alpha,r)
         errorList.append(LMS(is_index_train, Output))
         if i%50==0:           
             print(i)
             print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))
-    
+                #if times>=3000:
+                    #alpha=0.00
+    #Final_Acc.append(get_Acc(data_index_test,Input_test,W,V,gama,theta))
     print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())) 
-    
+        
     fig = plt.figure(figsize=(19, 7))
     ax1 = fig.add_subplot(131)
     plt.sca(ax1)
@@ -232,9 +241,15 @@ if __name__ == '__main__':
     plt.ylim(x2_min, x2_max)
     plt.pcolormesh(x1, x2, y_predict.reshape(x1.shape), shading='auto',cmap=cm_light)
     plt.scatter(data_x1_train,data_x2_train,s=2,c=data_index_train,cmap=cm_dark)
-       #print(W,V)
-    #plt.pause(0.001)
-    #plt.clf()
-    #plt.ioff()
+        #print(W,V)
+        #plt.pause(0.001)
+        #plt.clf()
+        #plt.ioff()
     print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))
-    plt.show()
+    plt.show() 
+    #print("五折交叉验证的测试集准确率依次为")
+    #print(Final_Acc)
+    #Final_Acc=np.array(Final_Acc)
+    #print("五折交叉验证平均准确率")
+    #print(np.sum(Final_Acc)/5)
+    
